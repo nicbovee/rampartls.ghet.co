@@ -5,9 +5,9 @@
 wordpress_sites:
   rampartls.ghet.co:
     site_hosts:
-      - canonical: rampartls.ghet.co
+      - canonical: ramp.ghet.co
         redirects:
-          - www.rampartsls.ghet.co
+          - www.ramp.ghet.co
     local_path: ../site # path targeting local Bedrock site directory (relative to Ansible root)
     repo: git@github.com:nicbovee/rampartls.ghet.co.git
     repo_subtree_path: site # relative path to your Bedrock/WP directory in your repo
