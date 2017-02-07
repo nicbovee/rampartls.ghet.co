@@ -10,6 +10,7 @@ wordpress_sites:
           - www.ramp.ghet.co
     local_path: ../bedrock # path targeting local Bedrock site directory (relative to Ansible root)
     repo: git@github.com:nicbovee/rampartls.ghet.co.git
+    repo_subtree_path: bedrock
     branch: master
     multisite:
       enabled: false
