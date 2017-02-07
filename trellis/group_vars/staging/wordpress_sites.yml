@@ -1,0 +1,20 @@
+# Documentation: https://roots.io/trellis/docs/remote-server-setup/
+# `wordpress_sites` options: https://roots.io/trellis/docs/wordpress-sites
+# Define accompanying passwords/secrets in group_vars/staging/vault.yml
+
+wordpress_sites:
+  rampartls.com:
+    site_hosts:
+      - canonical: rampartls.ghet.co
+        # redirects:
+        #   - otherdomain.com
+    local_path: ../bedrock # path targeting local Bedrock site directory (relative to Ansible root)
+    repo: https://nicbovee@bitbucket.org/ghettifishdev/bedrock.git # replace with your Git repo URL
+    branch: master
+    multisite:
+      enabled: false
+    ssl:
+      enabled: false
+      provider: letsencrypt
+    cache:
+      enabled: false
