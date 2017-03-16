@@ -598,6 +598,11 @@ class ET_Builder_Element {
 			}
 		}
 
+		// Create secondary attribute for transparent_background in VB for precise comparison to avoid saving default value
+		if ( et_is_builder_plugin_active() && 'et_pb_section' === $this->slug && isset( $this->shortcode_atts['transparent_background'] ) && '' !== $this->shortcode_atts['transparent_background'] ) {
+			$attrs['transparent_background_fb'] = $this->shortcode_atts['transparent_background'];
+		}
+
 		foreach( $this->shortcode_atts as $shortcode_attr_key => $shortcode_attr_value ) {
 			if ( isset( $fields[ $shortcode_attr_key ]['type'] ) && 'computed' === $fields[ $shortcode_attr_key ]['type'] ) {
 
@@ -618,7 +623,10 @@ class ET_Builder_Element {
 			}
 
 			// dont set the default, unless, lol, the value is literally 'default'
-			if ( isset( $fields[ $shortcode_attr_key ]['default'] ) && $value === $fields[ $shortcode_attr_key ]['default'] && $value !== 'default' ) {
+			// NOTE: bypass shortcode trimming for section's transparent background attribute in plugin, to preserve BB behaviour in VB
+			// which is loading 'default' if no attribute found, then switch it accordinly to either on/off on settings modal saving process
+			$is_plugin_section_transparent_background = et_is_builder_plugin_active() && 'et_pb_section' === $this->slug && 'transparent_background' === $shortcode_attr_key;
+			if ( isset( $fields[ $shortcode_attr_key ]['default'] ) && $value === $fields[ $shortcode_attr_key ]['default'] && $value !== 'default' && ! $is_plugin_section_transparent_background ) {
 				$value = '';
 			}
 

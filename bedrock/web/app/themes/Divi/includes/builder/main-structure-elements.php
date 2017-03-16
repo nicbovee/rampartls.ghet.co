@@ -9,6 +9,7 @@ class ET_Builder_Section extends ET_Builder_Structure_Element {
 		$this->whitelisted_fields = array(
 			'background_image',
 			'transparent_background',
+			'transparent_background_fb',
 			'background_color',
 			'background_video_mp4',
 			'background_video_webm',
@@ -134,6 +135,9 @@ class ET_Builder_Section extends ET_Builder_Structure_Element {
 					'background_color',
 				),
 				'description'       => esc_html__( 'Enabling this option will remove the background color of this section, allowing the website background color or background image to show through.', 'et_builder' ),
+			),
+			'transparent_background_fb' => array(
+				'type' => 'skip',
 			),
 			'background_color' => array(
 				'label'           => esc_html__( 'Background Color', 'et_builder' ),

@@ -2,7 +2,7 @@ var ET_PageBuilder = ET_PageBuilder || {};
 
 window.wp = window.wp || {};
 
-window.et_builder_version = '3.0.36';
+window.et_builder_version = '3.0.37';
 
 ( function($) {
 	var et_error_modal_shown = window.et_error_modal_shown,
@@ -7077,10 +7077,6 @@ window.et_builder_version = '3.0.36';
 						module_settings['current_row'] = additional_options_received.current_row_cid;
 					}
 
-					if ( typeof additional_options_received.global_id !== 'undefined' && '' !== additional_options_received.global_id ) {
-						module_settings['et_pb_global_module'] = additional_options_received.global_id;
-					}
-
 					if ( typeof additional_options_received.global_parent !== 'undefined' && '' !== additional_options_received.global_parent ) {
 						module_settings['et_pb_global_parent'] = additional_options_received.global_parent;
 						module_settings['global_parent_cid'] = additional_options_received.global_parent_cid;
@@ -7143,6 +7139,10 @@ window.et_builder_version = '3.0.36';
 						module_settings.className = ' et_pb_locked';
 					}
 
+					if ( typeof additional_options_received.global_id !== 'undefined' && '' !== additional_options_received.global_id ) {
+						module_settings['et_pb_global_module'] = additional_options_received.global_id;
+					}
+
 					this_el.collection.add( [ module_settings ] );
 
 					if ( 'reinit' === additional_options_received.is_reinit || ( global_module_id === '' || ( global_module_id !== '' && 'row' !== shortcode_name && 'row_inner' !== shortcode_name && 'section' !== shortcode_name ) ) ) {
@@ -7158,7 +7158,7 @@ window.et_builder_version = '3.0.36';
 						//calculate how many global modules we requested on page
 						et_pb_globals_requested++;
 
-						et_pb_load_global_row( global_module_id, module_cid );
+						et_pb_load_global_row( global_module_id, module_cid, shortcode );
 						this_el.createLayoutFromContent( shortcode_content, module_cid, '', { is_reinit : 'reinit' } );
 					}
 				} );
@@ -7636,7 +7636,7 @@ window.et_builder_version = '3.0.36';
 
 								content = $.trim( content );
 
-								if ( setting_name === 'et_pb_content_new' ) {
+								if ( '' !== content && setting_name === 'et_pb_content_new' ) {
 									content = "\n\n" + content + "\n\n";
 								}
 
@@ -7660,7 +7660,12 @@ window.et_builder_version = '3.0.36';
 									setting_value = setting_value.replace( /\"/g, '%22' ).replace( /\\/g, '%92' );
 								}
 
-								attributes += ' ' + setting_name + '="' + setting_value + '"';
+								// make sure admin label is always on the same position to correctly save the shortcode into library
+								if ( 'admin_label' === setting_name ) {
+									attributes = ' ' + setting_name + '="' + setting_value + '"' + attributes;
+								} else {
+									attributes += ' ' + setting_name + '="' + setting_value + '"';
+								}
 							}
 						}
 					}
@@ -11086,7 +11091,8 @@ window.et_builder_version = '3.0.36';
 		}
 
 		function et_pb_init_main_settings( $container, this_module_cid ) {
-			var $main_tabs                = $container.find( '.et-pb-options-tabs-links' ),
+			var module                    = ET_PageBuilder_Modules.findWhere( { cid : this_module_cid } ),
+				$main_tabs                = $container.find( '.et-pb-options-tabs-links' ),
 				$settings_tab             = $container.find( '.et-pb-options-tab' ),
 
 				$et_affect_fields         = $container.find( '.et-pb-affects' ),
@@ -11394,10 +11400,13 @@ window.et_builder_version = '3.0.36';
 			// calculate the value for transparent bg option if plugin activated
 			if ( $transparent_bg_option.length && et_pb_options.is_plugin_used ) {
 				var is_default_value = typeof $transparent_bg_option.data( 'default' ) !== 'undefined' && 'default' === $transparent_bg_option.data( 'default' ) ? true : false,
-					bg_color_option_value = $container.find( '#et_pb_background_color' ).val();
+					bg_color_option_value = $container.find( '#et_pb_background_color' ).val(),
+					module_transparent_background = module.attributes.et_pb_transparent_background,
+					module_transparent_background_fb = module.attributes.et_pb_transparent_background_fb,
+					is_transparent_background_fb = typeof module_transparent_background === 'undefined' && typeof module_transparent_background_fb !== 'undefined' && module_transparent_background_fb !== 'off';
 
 				// default value for the option should be yes if custom color is not defined
-				if ( is_default_value && '' === bg_color_option_value ) {
+				if ( ( is_default_value && '' === bg_color_option_value ) || is_transparent_background_fb ) {
 					$transparent_bg_option.val( 'on' );
 					$transparent_bg_option.trigger( 'change' );
 				}
@@ -11919,27 +11928,37 @@ window.et_builder_version = '3.0.36';
 		}
 
 		function et_pb_get_range_input_value( $range_input, update_element_value ) {
-			var $range_field = $range_input.parent().find( '.et-pb-range' ),
-				value        = parseFloat( $range_input.val() );
+			var $range_field    = $range_input.parent().find( '.et-pb-range' ),
+				range_value     = $range_input.val(),
+				range_processed = typeof range_value === 'string' ? range_value.trim() : range_value,
+				range_digit     = parseFloat( range_processed ),
+				range_string    = range_processed.toString().replace( range_digit, '' ),
+				result;
+
+			if ( Number.isNaN( range_digit ) ) {
+				range_digit = '';
+			}
 
 			if ( $range_field.hasClass( 'et-pb-fixed-range' ) ) {
 				var range_field_max = parseFloat( $range_field.attr( 'max' ) ),
 					range_field_min = parseFloat( $range_field.attr( 'min' ) ),
-					is_too_high = value > range_field_max,
-					is_too_low = value < range_field_min;
+					is_too_high = range_digit > range_field_max,
+					is_too_low = range_digit < range_field_min;
 
 				if ( is_too_high ) {
-					value = range_field_max;
+					range_digit = range_field_max;
 				} else if ( is_too_low ) {
-					value = range_field_min;
-				}
-
-				if ( update_element_value ) {
-					$range_input.val( value );
+					range_digit = range_field_min;
 				}
 			}
 
-			return value;
+			result = range_digit.toString() + range_string;
+
+			if ( update_element_value && result !== range_value ) {
+				$range_input.val( result );
+			}
+
+			return result;
 		}
 
 		function et_pb_get_default_setting_value( $element ) {
@@ -13111,7 +13130,7 @@ window.et_builder_version = '3.0.36';
 			} );
 		}
 
-		function et_pb_load_global_row( post_id, module_cid ) {
+		function et_pb_load_global_row( post_id, module_cid, current_content ) {
 			if ( ! $( 'body' ).find( '.et_pb_global_loading_overlay' ).length ) {
 				$( 'body' ).append( '<div class="et_pb_global_loading_overlay"></div>' );
 			}
@@ -13145,14 +13164,34 @@ window.et_builder_version = '3.0.36';
 							});
 						}
 					} else {
-						ET_PageBuilder_App.createLayoutFromContent( data.shortcode, '', '', { ignore_template_tag : 'ignore_template', current_row_cid : module_cid, global_id : post_id, is_reinit : 'reinit' } );
+						var processed_content = current_content.replace( / global_parent="\S+"/g, '' );
+						var processed_shortcode = data.shortcode.replace( /template_type="\S+"/, 'global_module="' + post_id + '"' );
+
+						// remove all the unwanted spaces and line-breaks to make sure shortcode comparison performed correctly.
+						processed_shortcode = processed_shortcode.replace( /\]\s+?\n+\s+?\n+?/g, '] ' );
+						processed_shortcode = processed_shortcode.replace( /\s+?\n+\s+?\n+?\[/g, ' [' );
+						processed_shortcode = processed_shortcode.replace( /]\s+\[/g, '] [' );
+
+						if ( processed_shortcode !== processed_content ) {
+							// call createLayoutFromContent only if current_shortcode is different than received shortcode
+							ET_PageBuilder_App.createLayoutFromContent( data.shortcode, '', '', { ignore_template_tag : 'ignore_template', current_row_cid : module_cid, global_id : post_id, is_reinit : 'reinit' } );
+						}
 					}
 
 					et_pb_globals_loaded++;
 
 					//make sure all global modules have been processed and reinitialize the layout
 					if ( et_pb_globals_requested === et_pb_globals_loaded ) {
-						et_reinitialize_builder_layout();
+						current_content = et_pb_get_content( 'content', true );
+						new_content = ET_PageBuilder_App.generateCompleteShortcode();
+						new_content = new_content.replace( /\]\s+?\n+\s+?\n+?/g, '] ' );
+						new_content = new_content.replace( /\s+?\n+\s+?\n+?\[/g, ' [' );
+						new_content = new_content.replace( /]\s+\[/g, '] [' );
+
+						// compare existing content with the updated content. reinitialize the layout only if they are not equal.
+						if ( current_content.replace( / global_parent="\S+"/g, '' ) !== new_content.replace( / global_parent="\S+"/g, '' ) ) {
+							et_reinitialize_builder_layout();
+						}
 
 						setTimeout( function(){
 							$( 'body' ).find( '.et_pb_global_loading_overlay' ).remove();
