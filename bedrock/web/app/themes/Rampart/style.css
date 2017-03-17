@@ -11,3 +11,16 @@
  Tags:         light, dark, two-columns, right-sidebar, responsive-layout, accessibility-ready
  Text Domain:  divi-child
 */
+
+
+/*Define root font-size*/
+@media screen and (min-width: 50em) {
+  :root {
+    font-size: 2vw;
+  }
+}
+
+@media screen and (min-width: 75em) {
+  :root {
+    font-size: 1.5em;
+  }
